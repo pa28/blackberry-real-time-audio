@@ -26,7 +26,9 @@ import net.rim.device.api.ui.UiApplication;
 
 
 /**
- * 
+ * Simple UiApplication implementation to start the application
+ * and push the main screen onto the display stack.
+ *
  */
 class RealTimeAudio extends UiApplication {
     

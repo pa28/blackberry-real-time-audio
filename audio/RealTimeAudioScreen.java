@@ -45,9 +45,11 @@ import net.rim.device.api.util.MathUtilities;
 import javax.microedition.media.*;
 import javax.microedition.media.control.*;
 
-/**
- * 
- */
+/*
+**
+*   Main screen for RealTimeAudio.
+*/
+
 public class RealTimeAudioScreen extends MainScreen implements FourierStreamListener, XYFieldListener, USBPortListener {
     private StoppableThread audioThread;
     private FourierStream stream;
@@ -59,14 +61,23 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
     private float[] real, exp;
     private DisplayManager displayManager;
     
+    /**
+     * Create the screen.
+     */
     public RealTimeAudioScreen() {
         super(Manager.NO_VERTICAL_SCROLL);
         setTitle("Real Time Audio");
         status = new LabelField("Status:");
         setStatus(status);
         add(displayManager = new DisplayManager(Field.USE_ALL_HEIGHT));
+        
+        // Add an XYField to display the exponential average of the spectrum
         displayManager.add(expField = new XYField(this));
+        
+        // Add the label field
         displayManager.add(expLabel = new LabelField(""));
+        
+        // Add an XYField to display the real time spectrum
         displayManager.add(xyField = new XYField(this));
         
         stream = null;
@@ -124,8 +135,17 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
     
     // FourierStreamListener
     
+    /**
+     * Called when the Fourier transform completes and a buffer full of data is ready for display
+     * 
+     * @param data an array holding the complex spectrum result of the FFT
+     */
     public void transformReady(float[] data) {
         //audioThread.stop();
+        
+        /**
+         * Ensure the buffers exist and are the correct size
+         */
         if (real == null || real.length != (data.length/2)) real = new float[data.length/2];
         if (exp == null || exp.length != (data.length/2)) {
             exp = new float[data.length/2];
@@ -135,14 +155,25 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
         double e2 = 1D / (double)expN;
         double e1 = (double)(expN - 1) * e2;
 
+        /**
+         * Convert the I and Q values in the buffer to amplitude values (discarding phase information)
+         */
         for (int i = 0; i < data.length-1; i+=2) {
             double d = Math.sqrt(data[i] * data[i] + data[i+1] * data[i+1]);
             if (log) d = MathUtilities.log(d);
             real[i/2] = (float)d;
             exp[i/2] = (float)(exp[i/2] * e1 + d * e2);
         }
+        
+        /**
+         * Apply the data to the appropriate fields.
+         */
         xyField.setFunction(real);
         expField.setFunction(exp);
+        
+        /**
+         * Update the status display once per second or once per FFT frame which ever is later.
+         */
         if (System.currentTimeMillis() - lastStatusUpdate > 1000) {
             status();
         }
@@ -150,25 +181,43 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
     
     // XYFieldListener
     
+    /**
+     * Listen for cursor events on the XYFields
+     * 
+     * @param field The field on which the event occured
+     * @param x The x coordinate of the cursor event
+     * @param f The frequency corresponding to x
+     */
     public void cursorValue(XYField field, int x, float f) {
+        // Update the appropriate field
         if (field == xyField) {
             expField.setCursor(x);
         } else {
             xyField.setCursor(x);
         }
         
+        // Update the frequency display
         expLabel.setText(expText((int)(4000F * f)));
     }
     
+    /**
+     * The screen is closing
+     */
     public void close() {
         if (audioThread != null) audioThread.stop();
         super.close();
     }
     
+    /**
+     * Clear the exponential average field display
+     */
     private void clearExpField() {
         for (int i = exp.length-1; i >= 0; i--) exp[i] = 0F;
     }
     
+    /**
+     * Stop audio reception and processing.
+     */
     public void stop() {
         if (audioThread != null) {
             audioThread.stop();
@@ -228,9 +277,17 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
         }
     }
     
+    /**
+     * Process key events for the screen
+     * 
+     * @param c The key character
+     * @param status Status of modifier keys
+     * @param time When the event happend
+     * @return true if this method consumed the event, false otherwise
+     */
     protected boolean keyChar(char c, int status, int time) {
         switch (c) {
-            case 's':
+            case 's':   // Start processing (test processing in the simulator)
                 stop();
                 stream = new FourierStream(n, this);
                 if (DeviceInfo.isSimulator()) {
@@ -242,7 +299,7 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
                 stream.clearStats();
                 audioThread.start();
                 return true;
-            case 't':
+            case 't':   // Start test processing
                 stop();
                 stream = new FourierStream(n, this);
                 audioThread = new TestThread(stream);
@@ -250,43 +307,43 @@ public class RealTimeAudioScreen extends MainScreen implements FourierStreamList
                 stream.clearStats();
                 audioThread.start();
                 return true;
-            case 'q':
+            case 'q':   // Stop processing
                 stop();
                 status();
                 return true;
-            case 'l':
+            case 'l':   // Toggle between logrythmic and linear processing
                 log = !log;
                 status();
                 return true;
-            case 'n':
+            case 'n':   // Reduce the number of samples used in the FFT, minimum 32
                 if (n > 32) {
                     stop();
                     n >>= 1;
                     status();
                 }
                 return true;
-            case 'N':
+            case 'N':   // Increase the number of samples used in the FFT, maximum 2048
                 if (n < 2048) {
                     stop();
                     n <<= 1;
                     status();
                 }
                 return true;
-            case 'x':
+            case 'x':   // Reduce the numer of frames averaged in the exponential display
                 if (expN > 1) {
                     expN >>= 1;
                     clearExpField();
                     expLabel.setText(expText());
                 }
                 return true;
-            case 'X':
+            case 'X':   // Increase the number of frames averaged in the exponential display
                 if (expN < 32) {
                     expN <<= 1; 
                     clearExpField();
                     expLabel.setText(expText());
                 }
                 return true;
-            case 'p':
+            case 'p':   // Locate the peak signal in the exponential display
                 if (exp != null) {
                     int idx = 0;
                     float p = exp[0];
