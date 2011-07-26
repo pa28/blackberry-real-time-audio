@@ -28,7 +28,7 @@ import net.rim.device.api.system.Display;
 
 
 /**
- * 
+ * A custom Manager to handle layout of the XYFields.
  */
 public class DisplayManager extends Manager {
     private int[] x, y, w, h;

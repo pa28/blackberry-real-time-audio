@@ -31,7 +31,8 @@ import net.rim.device.api.math.Fixed32;
 
 
 /**
- * 
+ * A custome Field to display X-Y data. Data is provided in an array, the X coordinate
+ * is derrived from the index, the Y coordinat is the value of the array element.
  */
 public class XYField extends Field {
     public final static int
@@ -47,6 +48,11 @@ public class XYField extends Field {
     private boolean acceptsFocus, hasFocus;
     private int cursor;
   
+    /**
+     * Default constructor
+     * 
+     * No listener, so it will not accept focus.
+     */
     public XYField() {
         super(Field.USE_ALL_HEIGHT);
         listener = null;
@@ -54,6 +60,12 @@ public class XYField extends Field {
         construct();
     }
     
+    /**
+     * Constructor with a specified listener
+     * @param listener An XYFieldListener
+     * 
+     * This listener is called when events, usually as a result of user action, occurr on the field.
+     */
     public XYField(XYFieldListener listener) {
         super(Field.USE_ALL_HEIGHT);
         this.listener = listener;
@@ -61,6 +73,9 @@ public class XYField extends Field {
         construct();
     }
     
+    /**
+     * Code common to all constructors.
+     */
     private void construct() {
         width = 0;
         height = 0;
@@ -74,6 +89,10 @@ public class XYField extends Field {
         hasFocus = false;
     }
     
+    /**
+     * Auto calibrate the Y axis of the field to attempt to provide the best display
+     * for the data.
+     */
     public void autoCalibrate() {
         if (f == null) return;
         
@@ -93,6 +112,11 @@ public class XYField extends Field {
         }
     }
     
+    /**
+     * Set the data to be plotted in the field.
+     * 
+     * @param y An array with the data.
+     */
     public void setFunction(float[] y) {
         f = y;
         maxx = f.length;
@@ -108,20 +132,40 @@ public class XYField extends Field {
         calibrate();
     }
     
+    /**
+     * Normalize a value on the Y axis
+     * 
+     * @param f The 'real' Y value to plot
+     * @return The 'screen' Y value to plot
+     */
     private int normalizeY(float f) {
         int n = height - (int)(((f - miny) / rngy) * (float)height);
         return n;
     }
     
+    /**
+     * Normalize a value on the X axis
+     * 
+     * @param x the 'real' X value to plot
+     * @return The 'screen' X value to plot
+     */
     private int normalizeX(int x) {
         return Fixed32.toRoundedInt(Fixed32.mul( Fixed32.div( Fixed32.toFP(width), Fixed32.toFP(maxx) ), Fixed32.toFP(x)));
     }
     
+    /**
+     * Calibrate the field to best display the data.
+     */
     private void calibrate() {
         if (f == null) return;
         
         int rangeError = 0;
         
+        /**
+         * If the number of values in the data array is more than twice the number of pixels
+         * in the horizontal dimension of the field, divide the data in to bins and draw a 
+         * vertical line from the maximum to the minimum value in that bin.
+         */
         if (f.length > width*2) {
             mode = MODE_MIN_MAX;
             int wFP = Fixed32.toFP(width);
@@ -151,6 +195,9 @@ public class XYField extends Field {
                     y[idx] = Math.min(y[idx], n);
                 }
             }
+        /**
+         * Otherwise just plot the data as a set of X-Y point joined by lines
+         */
         } else {
             mode = MODE_XY;
             if (x == null || x.length != width) x = new int[f.length];
@@ -171,6 +218,9 @@ public class XYField extends Field {
             }
         }
         
+        /**
+         * Invalidate the field to trigger a re-draw
+         */
         synchronized(getScreen().getApplication().getAppEventLock()) {
             invalidate();
         }
@@ -225,25 +275,33 @@ public class XYField extends Field {
         g.setColor(c);
     }
     
+    /**
+     * Handle key events that occure when this field has focus
+     * 
+     * @param c The key character
+     * @param status The modifier key status
+     * @param time The time the event happend
+     * @return true if this method consumes the event, false otherwise
+     */
     protected boolean keyChar(char c, int status, int time) {
         switch (c) {
-            case 'a':
+            case 'a':   // Auto calibrate the field
                 autoCalibrate();
                 invalidate();
                 return true;
-            case 'R':
+            case 'R':   // Double the Y range
                 rngy *= 2F;
                 invalidate();
                 return true;
-            case 'r':
+            case 'r':   // Halve the Y range
                 rngy /= 2F;
                 invalidate();
                 return true;
-            case 'M':
+            case 'M':   // Increase the minimum displayed Y value by the Y axis range
                 miny += rngy / 10F;
                 invalidate();
                 return true;
-            case 'm':
+            case 'm':   // Decrease the minimum displayed Y value by the Y axis range
                 miny -= rngy / 10F;
                 invalidate();
                 return true;
@@ -278,12 +336,26 @@ public class XYField extends Field {
         invalidate();
     }
     
+    /**
+     * Update the cursor position and notify the listener if set.
+     * 
+     * @param dx The amout to move the cursor
+     */
     private void updateCursor(int dx) {
         setCursor(cursor + dx);
         if (listener != null) listener.cursorValue(this, cursor, (float)cursor/(float)width);
         invalidate();
     }
     
+    /**
+     * Translate navigation movements of the Trackwheel, Trackball or Trackpad into cursor movement
+     * 
+     * @param dx Horizontal movement
+     * @param dy Vertical movement
+     * @param status Modifier key status
+     * @param time Time of the event
+     * @return true if this method consumes the event, false otherwise
+     */
     protected boolean navigationMovement(int dx, int dy, int status, int time) {
         if ((status & KeypadListener.STATUS_TRACKWHEEL) == KeypadListener.STATUS_TRACKWHEEL) {
             if ((status & KeypadListener.STATUS_ALT) == KeypadListener.STATUS_ALT) {
