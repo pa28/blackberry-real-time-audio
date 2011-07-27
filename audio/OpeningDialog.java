@@ -1,5 +1,5 @@
 /*
- * RealTimeAudio.java
+ * OpeningDialog.java
  *
  * © H. R. Buckley, 2003-2011
     BlackBerry Real Time Audio - real time audio analysis
@@ -17,33 +17,29 @@
 
     You should have received a copy of the GNU General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
-*/
+ */
 
 package audio;
 
-
-import net.rim.device.api.ui.UiApplication;
-
+import java.io.InputStream;
+import java.io.IOException;
+import net.rim.device.api.ui.component.Dialog;
 
 /**
- * Simple UiApplication implementation to start the application
- * and push the main screen onto the display stack.
- *
+ * 
  */
-class RealTimeAudio extends UiApplication {
-    
-    public static void main(String args[]) {
-        RealTimeAudio rta = new RealTimeAudio();
-        rta.pushScreen(new RealTimeAudioScreen());
-        
-        rta.invokeLater(new Runnable() {
-            public void run() {
-                new OpeningDialog();
-            }
-        });
-        
-        rta.enterEventDispatcher();
+public class OpeningDialog {
+    public OpeningDialog() {
+        try {
+            InputStream istrm = getClass().getResourceAsStream("license.txt");
+            int a = istrm.available();
+            byte[] b = new byte[a];
+            istrm.read(b);
+            
+            String s = new String(b);
+            Dialog.inform(s);
+        } catch (IOException ioe) {
+        }
     }
-    
-    RealTimeAudio() {    }
-} 
+}
+
