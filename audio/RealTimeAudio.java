@@ -33,12 +33,12 @@ import net.rim.device.api.ui.UiApplication;
 class RealTimeAudio extends UiApplication {
     
     public static void main(String args[]) {
-        RealTimeAudio rta = new RealTimeAudio();
+        final RealTimeAudio rta = new RealTimeAudio();
         rta.pushScreen(new RealTimeAudioScreen());
         
         rta.invokeLater(new Runnable() {
             public void run() {
-                new OpeningDialog();
+                OpeningDialog.postOpeningDialog(rta);
             }
         });
         

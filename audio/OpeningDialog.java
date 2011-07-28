@@ -23,21 +23,27 @@ package audio;
 
 import java.io.InputStream;
 import java.io.IOException;
+import net.rim.device.api.ui.UiApplication;
 import net.rim.device.api.ui.component.Dialog;
 
 /**
  * 
  */
-public class OpeningDialog {
-    public OpeningDialog() {
+public class OpeningDialog extends Dialog {
+    protected OpeningDialog(String msg) {
+        super(Dialog.D_OK, msg, Dialog.OK, null, 0L);
+    }
+    
+    public static void postOpeningDialog(UiApplication app) {
         try {
-            InputStream istrm = getClass().getResourceAsStream("license.txt");
+            InputStream istrm = app.getClass().getResourceAsStream("license.txt");
             int a = istrm.available();
             byte[] b = new byte[a];
             istrm.read(b);
             
             String s = new String(b);
-            Dialog.inform(s);
+            Dialog d = new OpeningDialog(s);
+            d.doModal();
         } catch (IOException ioe) {
         }
     }
