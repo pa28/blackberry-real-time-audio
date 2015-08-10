@@ -1,0 +1,8 @@
+The ZIP file contains a MS Windows installer that will install compiled versions for BlackBerry OS versions
+4.2.1, 4.3, 4.5 and 4.61; an ALX file for the Desktop Manager; and documentation in PDF format. This binary
+was initially released un the Eclipse Public License version 1.0. New binaries will be released under
+GNU GPL v 3 or later.
+
+On Windows 7 (and probably Vista) you will have to run the installer (and the uninstaller if you choose to)
+as the Administrator. Extract the installer from the ZIP, then righ click on the installer and select
+'Run as Administrator'.
